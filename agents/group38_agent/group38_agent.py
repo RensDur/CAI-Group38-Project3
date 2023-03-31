@@ -1,3 +1,4 @@
+from decimal import Decimal
 import logging
 from random import randint
 from time import time
@@ -51,6 +52,10 @@ class Group38Agent(DefaultParty):
         self.last_received_bid: Bid = None
         self.opponent_model: OpponentModel = None
         self.logger.log(logging.INFO, "party is initialized")
+
+        # Concession factor: beta
+        self._beta = 3
+
 
     def notifyChange(self, data: Inform):
         """MUST BE IMPLEMENTED
@@ -108,6 +113,7 @@ class Group38Agent(DefaultParty):
         else:
             self.logger.log(logging.WARNING, "Ignoring unknown info " + str(data))
 
+    # Do not change this function - capabilities have been set for the competition
     def getCapabilities(self) -> Capabilities:
         """MUST BE IMPLEMENTED
         Method to indicate to the protocol what the capabilities of this agent are.
@@ -137,7 +143,7 @@ class Group38Agent(DefaultParty):
         Returns:
             str: Agent description
         """
-        return "Template agent for the ANL 2022 competition"
+        return "Initial Agent - CSE3210 - Group 38"
 
     def opponent_action(self, action):
         """Process an action that was received from the opponent.
@@ -187,6 +193,9 @@ class Group38Agent(DefaultParty):
     ################################## Example methods below ##################################
     ###########################################################################################
 
+
+
+    # Determines when a bid is accepted and not
     def accept_condition(self, bid: Bid) -> bool:
         if bid is None:
             return False
@@ -197,8 +206,7 @@ class Group38Agent(DefaultParty):
         # very basic approach that accepts if the offer is valued above 0.7 and
         # 95% of the time towards the deadline has passed
         conditions = [
-            self.profile.getUtility(bid) > 0.8,
-            progress > 0.95,
+            self.profile.getUtility(bid) > self._getUtilityGoal(progress)
         ]
         return all(conditions)
 
@@ -245,3 +253,36 @@ class Group38Agent(DefaultParty):
             score += opponent_score
 
         return score
+    
+
+
+
+    #
+    # PRIVATE FUNCTIONS
+    #
+
+    # Get the utility goal, based on concession-parameter
+    def _getUtilityGoal(self, time: float) -> Decimal:
+
+        # Max- and min-utilities
+        minUtil = Decimal(0.5) # default reservation-value of 0.5
+        maxUtil = Decimal(1)
+        
+        # Definition of the time-vector
+        def timeVector(time):
+            if self._beta != 0:
+                return Decimal(1)
+            else:
+                return Decimal(round( 1 - pow(time, 1/self._beta) ))
+        
+        # Compute the maximum of the minimum of the max-utility and the
+        # calculated utilility with concessions
+        return max(
+            min(
+                (minUtil + (maxUtil - minUtil) * timeVector(time)),
+                maxUtil
+            ), minUtil
+        )
+
+
+        
