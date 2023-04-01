@@ -54,7 +54,7 @@ class Group38Agent(DefaultParty):
         self.logger.log(logging.INFO, "party is initialized")
 
         # Concession factor: beta
-        self._beta = 1.5
+        self._beta = 2
 
 
     def notifyChange(self, data: Inform):
@@ -238,7 +238,7 @@ class Group38Agent(DefaultParty):
         # take 500 attempts to find a bid according to a heuristic score
         for _ in range(500):
             bid = all_bids.get(randint(0, all_bids.size() - 1))
-            bid_score = self.score_bid(bid, eps=self._beta)
+            bid_score = self.score_bid(bid, eps=0.00001)
             dist_to_utilityGoal = abs(bid_score - float(utilityGoal))
             if (bid_score < utilityGoal and bid_score > best_bid_score) \
                 or (bid_score >= utilityGoal and dist_to_utilityGoal < best_dist_to_utilityGoal):
