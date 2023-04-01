@@ -21,9 +21,13 @@ settings = {
             "class": "agents.group38_agent.group38_agent.Group38Agent",
             "parameters": {"storage_dir": "agent_storage/Group38Agent"},
         },
+        # {
+        #     "class": "agents.template_agent.template_agent.TemplateAgent",
+        #     "parameters": {"storage_dir": "agent_storage/TemplateAgent"},
+        # },
         {
-            "class": "agents.template_agent.template_agent.TemplateAgent",
-            "parameters": {"storage_dir": "agent_storage/TemplateAgent"},
+            "class": "agents.conceder_agent.conceder_agent.ConcederAgent",
+            "parameters": {"storage_dir": "agent_storage/ConcederAgent"},
         },
     ],
     "profiles": ["domains/domain00/profileA.json", "domains/domain00/profileB.json"],

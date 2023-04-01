@@ -54,7 +54,7 @@ class Group38Agent(DefaultParty):
         self.logger.log(logging.INFO, "party is initialized")
 
         # Concession factor: beta
-        self._beta = 3
+        self._beta = 1.5
 
 
     def notifyChange(self, data: Inform):
@@ -151,6 +151,9 @@ class Group38Agent(DefaultParty):
         Args:
             action (Action): action of opponent
         """
+
+        """An (Action) can either be an Offer, Accept or EndNegotiation (walkaway)"""
+
         # if it is an offer, set the last received bid
         if isinstance(action, Offer):
             # create opponent model if it was not yet initialised
@@ -195,7 +198,9 @@ class Group38Agent(DefaultParty):
 
 
 
-    # Determines when a bid is accepted and not
+    """[Strategy]
+    Determines when a bid is accepted and not
+    """
     def accept_condition(self, bid: Bid) -> bool:
         if bid is None:
             return False
@@ -203,30 +208,47 @@ class Group38Agent(DefaultParty):
         # progress of the negotiation session between 0 and 1 (1 is deadline)
         progress = self.progress.get(time() * 1000)
 
-        # very basic approach that accepts if the offer is valued above 0.7 and
-        # 95% of the time towards the deadline has passed
+        # Accept this bid once its utility has reached at least our utility-goal.
+        # This utility goal is based on the progress in the negotiation.
         conditions = [
             self.profile.getUtility(bid) > self._getUtilityGoal(progress)
         ]
         return all(conditions)
 
+    """
+    Find a new bid, by taking 500 attempts and choosing the bid with the highest score,
+    according to 'score_bid'
+    """
     def find_bid(self) -> Bid:
         # compose a list of all possible bids
         domain = self.profile.getDomain()
         all_bids = AllBidsList(domain)
 
+        # progress of the negotiation session between 0 and 1 (1 is deadline)
+        progress = self.progress.get(time() * 1000)
+
+        # Calculate our utility goal
+        utilityGoal = self._getUtilityGoal(progress)
+
         best_bid_score = 0.0
         best_bid = None
+        best_dist_to_utilityGoal = 0.4
+        dist_to_utilityGoal = 1.0
 
         # take 500 attempts to find a bid according to a heuristic score
         for _ in range(500):
             bid = all_bids.get(randint(0, all_bids.size() - 1))
-            bid_score = self.score_bid(bid)
-            if bid_score > best_bid_score:
-                best_bid_score, best_bid = bid_score, bid
+            bid_score = self.score_bid(bid, eps=self._beta)
+            dist_to_utilityGoal = abs(bid_score - float(utilityGoal))
+            if (bid_score < utilityGoal and bid_score > best_bid_score) \
+                or (bid_score >= utilityGoal and dist_to_utilityGoal < best_dist_to_utilityGoal):
+                best_bid_score, best_bid, best_dist_to_utilityGoal = bid_score, bid, dist_to_utilityGoal
 
         return best_bid
 
+    """[Strategy]
+    Score a bid, based on both our own utility and the predicted utility of the opponent.
+    """
     def score_bid(self, bid: Bid, alpha: float = 0.95, eps: float = 0.1) -> float:
         """Calculate heuristic score for a bid
 
@@ -261,28 +283,33 @@ class Group38Agent(DefaultParty):
     # PRIVATE FUNCTIONS
     #
 
-    # Get the utility goal, based on concession-parameter
-    def _getUtilityGoal(self, time: float) -> Decimal:
+    """ [Strategy]
+    Calculate the utility-goal, based on the strategy of choice.
+    """
+    def _getUtilityGoal(self, progress: float) -> Decimal:
 
         # Max- and min-utilities
         minUtil = Decimal(0.5) # default reservation-value of 0.5
         maxUtil = Decimal(1)
         
-        # Definition of the time-vector
-        def timeVector(time):
-            if self._beta != 0:
+        # Definition of the progress-vector
+        def progressVector(progress):
+            if self._beta == 0:
                 return Decimal(1)
             else:
-                return Decimal(round( 1 - pow(time, 1/self._beta) ))
+                return Decimal(round( 1.0 - pow(progress, 1.0/self._beta), 6))
         
         # Compute the maximum of the minimum of the max-utility and the
         # calculated utilility with concessions
-        return max(
+        result = max(
             min(
-                (minUtil + (maxUtil - minUtil) * timeVector(time)),
+                (minUtil + (maxUtil - minUtil) * progressVector(progress)),
                 maxUtil
-            ), minUtil
+            ),
+            minUtil
         )
+        print(result)
+        return result
 
 
         
