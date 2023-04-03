@@ -26,11 +26,11 @@ settings = {
         #     "parameters": {"storage_dir": "agent_storage/TemplateAgent"},
         # },
         {
-            "class": "agents.conceder_agent.conceder_agent.ConcederAgent",
-            "parameters": {"storage_dir": "agent_storage/ConcederAgent"},
+            "class": "agents.hardliner_agent.hardliner_agent.HardlinerAgent",
+            "parameters": {"storage_dir": "agent_storage/HardlinerAgent"},
         },
     ],
-    "profiles": ["domains/domain00/profileA.json", "domains/domain00/profileB.json"],
+    "profiles": ["domains/domain03/profileA.json", "domains/domain03/profileB.json"],
     "deadline_time_ms": 10000,
 }
 

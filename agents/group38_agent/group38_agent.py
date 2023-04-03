@@ -6,6 +6,7 @@ from typing import cast
 
 from geniusweb.actions.Accept import Accept
 from geniusweb.actions.Action import Action
+from geniusweb.actions.EndNegotiation import EndNegotiation
 from geniusweb.actions.Offer import Offer
 from geniusweb.actions.PartyId import PartyId
 from geniusweb.bidspace.AllBidsList import AllBidsList
@@ -53,8 +54,12 @@ class Group38Agent(DefaultParty):
         self.opponent_model: OpponentModel = None
         self.logger.log(logging.INFO, "party is initialized")
 
+        # initialize the best and worst bids
+        self.best_received_bid: Decimal = 0.0
+        self.worst_received_bid: Decimal = 1.0
+
         # Concession factor: beta
-        self._beta = 2
+        self._beta = 2.0
 
 
     def notifyChange(self, data: Inform):
@@ -171,8 +176,26 @@ class Group38Agent(DefaultParty):
         """This method is called when it is our turn. It should decide upon an action
         to perform and send this action to the opponent.
         """
+
+        # update the best and worst bids based on the last received bid
+        if self.last_received_bid is not None:
+            current_score = self.profile.getUtility(self.last_received_bid)
+            if current_score > self.best_received_bid:
+                self.best_received_bid = current_score
+                print(self.best_received_bid)
+            if current_score < self.worst_received_bid:
+                self.worst_received_bid = current_score
+                print(self.worst_received_bid)
+
+        progress = self.progress.get(time() * 1000)
+        # if over half the negotiation is done and we considered the opponent to be uncooperative,
+        # we walk away
+        if progress > 0.5:
+            if self.best_received_bid - self.worst_received_bid <= 0.2 and self.best_received_bid < 0.4:
+                action = EndNegotiation(self.me)
+
         # check if the last received offer is good enough
-        if self.accept_condition(self.last_received_bid):
+        elif self.accept_condition(self.last_received_bid):
             # if so, accept the offer
             action = Accept(self.me, self.last_received_bid)
         else:
@@ -308,7 +331,7 @@ class Group38Agent(DefaultParty):
             ),
             minUtil
         )
-        print(result)
+        # print(result)
         return result
 
 
