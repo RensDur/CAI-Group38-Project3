@@ -289,7 +289,7 @@ class Group38Agent(DefaultParty):
     def _getUtilityGoal(self, progress: float) -> Decimal:
 
         # Max- and min-utilities
-        minUtil = Decimal(0) # default reservation-value of 0.5
+        minUtil = Decimal(0.5) # default reservation-value of 0.5
         maxUtil = Decimal(1)
         
         # Definition of the progress-vector
