@@ -182,20 +182,22 @@ class Group38Agent(DefaultParty):
             current_score = self.profile.getUtility(self.last_received_bid)
             if current_score > self.best_received_bid:
                 self.best_received_bid = current_score
-                print(self.best_received_bid)
+                print("best:", self.best_received_bid)
             if current_score < self.worst_received_bid:
                 self.worst_received_bid = current_score
-                print(self.worst_received_bid)
+                print("worst:", self.worst_received_bid)
 
         progress = self.progress.get(time() * 1000)
         # if over half the negotiation is done and we considered the opponent to be uncooperative,
         # we walk away
         if progress > 0.5:
+            print("over halfway")
             if self.best_received_bid - self.worst_received_bid <= 0.2 and self.best_received_bid < 0.4:
                 action = EndNegotiation(self.me)
+                self.send_action(action)
 
         # check if the last received offer is good enough
-        elif self.accept_condition(self.last_received_bid):
+        if self.accept_condition(self.last_received_bid):
             # if so, accept the offer
             action = Accept(self.me, self.last_received_bid)
         else:
