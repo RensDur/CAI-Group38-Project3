@@ -15,22 +15,25 @@ if not RESULTS_DIR.exists():
 #   You need to specify the classpath of 2 agents to start a negotiation. Parameters for the agent can be added as a dict (see example)
 #   You need to specify the preference profiles for both agents. The first profile will be assigned to the first agent.
 #   You need to specify a time deadline (is milliseconds (ms)) we are allowed to negotiate before we end without agreement
+
+opponentAgent = "Template"
+negotiationDomain = "03"
+
+# Derived variables
+opponentAgentDir = opponentAgent.lower() + "_agent"
+
 settings = {
     "agents": [
         {
             "class": "agents.group38_agent.group38_agent.Group38Agent",
             "parameters": {"storage_dir": "agent_storage/Group38Agent"},
         },
-        # {
-        #     "class": "agents.template_agent.template_agent.TemplateAgent",
-        #     "parameters": {"storage_dir": "agent_storage/TemplateAgent"},
-        # },
         {
-            "class": "agents.group38_agent.group38_agent.Group38Agent",
-            "parameters": {"storage_dir": "agent_storage/Group38Agent"},
+            "class": "agents." + opponentAgentDir + "." + opponentAgentDir + "." + opponentAgent + "Agent",
+            "parameters": {"storage_dir": "agent_storage/" + opponentAgent + "Agent"},
         },
     ],
-    "profiles": ["domains/domain03/profileA.json", "domains/domain03/profileB.json"],
+    "profiles": ["domains/domain" + negotiationDomain + "/profileA.json", "domains/domain" + negotiationDomain + "/profileB.json"],
     "deadline_time_ms": 10000,
 }
 
