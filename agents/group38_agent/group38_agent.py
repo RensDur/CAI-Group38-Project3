@@ -190,9 +190,9 @@ class Group38Agent(DefaultParty):
         progress = self.progress.get(time() * 1000)
         # if over half the negotiation is done and we considered the opponent to be uncooperative,
         # we walk away
-        if progress > 0.5:
+        if progress > 0.4:
             print("over halfway")
-            if self.best_received_bid - self.worst_received_bid <= 0.2 and self.best_received_bid < 0.4:
+            if self.best_received_bid - self.worst_received_bid <= 0.15 and self.best_received_bid < 0.4:
                 action = EndNegotiation(self.me)
                 self.send_action(action)
 

@@ -26,8 +26,8 @@ settings = {
         #     "parameters": {"storage_dir": "agent_storage/TemplateAgent"},
         # },
         {
-            "class": "agents.hardliner_agent.hardliner_agent.HardlinerAgent",
-            "parameters": {"storage_dir": "agent_storage/HardlinerAgent"},
+            "class": "agents.group38_agent.group38_agent.Group38Agent",
+            "parameters": {"storage_dir": "agent_storage/Group38Agent"},
         },
     ],
     "profiles": ["domains/domain03/profileA.json", "domains/domain03/profileB.json"],
