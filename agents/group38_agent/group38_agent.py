@@ -1,5 +1,6 @@
 from decimal import Decimal
 import logging
+import numpy as np
 from random import randint
 from time import time
 from typing import cast
@@ -55,6 +56,7 @@ class Group38Agent(DefaultParty):
 
         # Concession factor: beta
         self._beta = 0.2
+        self.current_bids = []
 
 
     def notifyChange(self, data: Inform):
@@ -262,22 +264,71 @@ class Group38Agent(DefaultParty):
         Returns:
             float: score
         """
-        progress = self.progress.get(time() * 1000)
+        # progress = self.progress.get(time() * 1000)
+        #
+        # our_utility = float(self.profile.getUtility(bid))
+        #
+        # time_pressure = 1.0 - progress ** (1 / eps)
+        # score = alpha * time_pressure * our_utility
+        #
+        # if self.opponent_model is not None:
+        #     opponent_utility = self.opponent_model.get_predicted_utility(bid)
+        #     opponent_score = (1.0 - alpha * time_pressure) * opponent_utility
+        #     score += opponent_score
+        #
+        # return score
 
+        # Get utilities
         our_utility = float(self.profile.getUtility(bid))
 
-        time_pressure = 1.0 - progress ** (1 / eps)
-        score = alpha * time_pressure * our_utility
+        if self.opponent_model is None:
+            progress = self.progress.get(time() * 1000)
+            time_pressure = 1.0 - progress ** (1 / eps)
+            return alpha * time_pressure * our_utility
 
-        if self.opponent_model is not None:
-            opponent_utility = self.opponent_model.get_predicted_utility(bid)
-            opponent_score = (1.0 - alpha * time_pressure) * opponent_utility
-            score += opponent_score
+        opponent_utility = self.opponent_model.get_predicted_utility(bid)
 
-        return score
+        # Add current bid to list
+        self.current_bids.append((our_utility, opponent_utility))
+
+        # Calculate pareto optimal frontier
+        pareto_frontier = []
+        for outcome in self.current_bids:
+            if outcome[0] >= our_utility and outcome[1] >= opponent_utility:
+                pareto_frontier.append(outcome)
+        pareto_frontier = np.array(pareto_frontier)
+
+        # Calculate the Nash product
+        nash_products = np.array([outcome[0] * outcome[1] for outcome in pareto_frontier])
+
+        # Calculate the Kalai-Smorodinsky point
+        kalai_smorodinsky = np.array([(our_utility + min(pareto_frontier[:, 0])) / 2,
+                                      (opponent_utility + min(pareto_frontier[:, 1])) / 2])
+
+        # Calculate the distances from the bid to these features
+        pareto_distance = np.min(np.sqrt(np.sum((pareto_frontier - np.array([our_utility, opponent_utility])) ** 2, axis=1)))
+        nash_distance = np.min(np.abs(nash_products - (our_utility * opponent_utility)))
+        ks_distance = np.sqrt(np.sum((kalai_smorodinsky - np.array([our_utility, opponent_utility])) ** 2))
+
+        # Define weights dependent on how important each factor is
+        pareto_weight = 0.5
+        nash_weight = 0.3
+        ks_weight = 0.2
+
+        # TODO: find proper max distance
+        n = AllBidsList(self.profile.getDomain()).size()
+        max_distance = np.sqrt(np.sum(n ** 2))
+
+        # Calculate seperate scores
+        pareto_score = (max_distance - pareto_distance) / max_distance
+        nash_score = (max_distance - nash_distance) / max_distance
+        ks_score = ks_distance / max_distance
+
+        print("pareto:", pareto_score)
+        print("nash:", nash_score)
+        print("ks:", ks_score)
     
-
-
+        return (pareto_score * pareto_weight) + (nash_score * nash_weight) + (ks_score * ks_weight)
 
     #
     # PRIVATE FUNCTIONS
