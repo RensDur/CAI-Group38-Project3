@@ -293,18 +293,54 @@ class Group38Agent(DefaultParty):
 
         # Calculate pareto optimal frontier
         pareto_frontier = []
-        for outcome in self.current_bids:
-            if outcome[0] >= our_utility and outcome[1] >= opponent_utility:
+        for index,outcome in enumerate(self.current_bids):
+            isPareto = True
+            for index2,outcome2 in enumerate(self.current_bids):
+                if index==index2:
+                    continue
+                if outcome2[0] > outcome[0] and outcome2[1] > outcome[1]:
+                    isPareto = False
+                    break
+            if isPareto:
                 pareto_frontier.append(outcome)
+
         pareto_frontier = np.array(pareto_frontier)
 
         # Calculate the Nash product
         nash_products = np.array([outcome[0] * outcome[1] for outcome in pareto_frontier])
 
         # Calculate the Kalai-Smorodinsky point
-        kalai_smorodinsky = np.array([(our_utility + min(pareto_frontier[:, 0])) / 2,
-                                      (opponent_utility + min(pareto_frontier[:, 1])) / 2])
-
+        # kalai_smorodinsky = np.array([(our_utility + min(pareto_frontier[:, 0])) / 2,
+        #                               (opponent_utility + min(pareto_frontier[:, 1])) / 2])
+        up = []
+        down = []
+        kalai_smorodinsky = None
+        for point in pareto_frontier:
+            if point[0] == point[1]:
+                kalai_smorodinsky = point 
+                break 
+            if point[0] > point[1]:
+                down.append(point)
+            if point[0] < point[1]:
+                up.append(point)
+        if kalai_smorodinsky == None:
+            if len(up) > 0:
+                if len(down) > 0:
+                    # intersection point of y=x and line through two closest points to this line (on both sides)
+                    p1 = max(up, key = lambda x: x[0]+x[1])
+                    p2 = max(down, key = lambda x: x[0]+x[1])
+                    # using y = ax + b
+                    a = (p1[1]-p2[1])/(p1[0]-p2[0])
+                    b = p1[1]-a*p1[0]
+                    kalai_smorodinsky = [b/(1-a),b/(1-a)]
+                else:
+                    kalai_smorodinsky = min(up, key = lambda x: x[0]+x[1])
+            else:
+                if len(down) > 0:
+                    kalai_smorodinsky = min(down, key = lambda x: x[0]+x[1])
+                else:
+                    kalai_smorodinsky = [1,1]
+        kalai_smorodinsky = np.array(kalai_smorodinsky)
         # Calculate the distances from the bid to these features
         pareto_distance = np.min(np.sqrt(np.sum((pareto_frontier - np.array([our_utility, opponent_utility])) ** 2, axis=1)))
         nash_distance = np.min(np.abs(nash_products - (our_utility * opponent_utility)))
