@@ -253,7 +253,7 @@ class Group38Agent(DefaultParty):
     """[Strategy]
     Score a bid, based on both our own utility and the predicted utility of the opponent.
     """
-    def score_bid(self, bid: Bid, alpha: float = 0.95, eps: float = 0.1) -> float:
+    def score_bid(self, bid: Bid, alpha: float = 0.95, eps: float = 0.01) -> float:
         """Calculate heuristic score for a bid
 
         Args:
@@ -282,99 +282,92 @@ class Group38Agent(DefaultParty):
 
 
 
-
-
-
-
-
-
-
-
-
-
         # Add current bid to list
         self.current_bids.append((our_utility, opponent_utility))
 
+
+        new_kalai = None
         pareto_distance = np.sqrt(2.0)
-        max_pareto = 0.0
+        max_pareto = 0.0        
+        closest_up = (0.0,1.0) 
+        closest_down = (1.0,0.0)
+        pareto_changed = False
         if len(self.pareto_frontier) == 0:
+            # first bid so add to POF
+            pareto_changed = True
             self.pareto_frontier.append((our_utility,opponent_utility))
             max_pareto = 1.0
             pareto_distance = 0.0
-            self.kalai_smorodinsky = ((our_utility+opponent_utility)/2.0,(our_utility+opponent_utility)/2.0)
+            new_kalai = ((our_utility+opponent_utility)/2.0,(our_utility+opponent_utility)/2.0)
         else:
-            closest_up = (0.0,1.0) 
-            closest_down = (1.0,0.0)
             new_pareto = []
             include = True
-            new_kalai = None
+            # loop through POF and check if new bid will change the frontier
+            # while in this loop, we also check which points are closest to the y=x line, to later calculate the kalai smordin-whatever point
             for point in self.pareto_frontier:
+
+                if our_utility <= point[0] and opponent_utility <= point[1]:
+                    include = False
+                if our_utility > point[0] and opponent_utility > point[1]:
+                    # don't include this point in the POF anymore
+                    continue   
+                # update pareto distances
+                pareto_distance = min(pareto_distance,np.sqrt(np.abs(point[0]-our_utility)**2 + np.abs(point[1]-opponent_utility)**2))
+                max_pareto = max(max_pareto, np.sqrt(point[0]**2 + point[1]**2))
+
+                # include in new POF
+                new_pareto.append(point)
+
+                if not include:
+                    continue
+                # check of points close to y=x
                 if point[0] == point[1]:
                     new_kalai = point 
+                    # break
                 elif point[0] < point[1]:
                     closest_up = min(closest_up, point, key=lambda x: np.abs(x[0]-x[1]))
                 else:
                     closest_down = min(closest_down, point, key=lambda x: np.abs(x[0]-x[1]))
 
-                pareto_distance = min(pareto_distance,np.sqrt(np.abs(point[0]-our_utility)**2 + np.abs(point[1]-opponent_utility)**2))
-                max_pareto = max(max_pareto, np.sqrt(point[0]**2 + point[1]**2))
-                if our_utility <= point[0] and opponent_utility <= point[1]:
-                    include = False
-                    new_pareto = self.pareto_frontier
-                    break
-                if our_utility > point[0] and opponent_utility > point[1]:
-                    continue
-                new_pareto.append(point)
+
+
+            if include or len(self.pareto_frontier) != len(new_pareto):
+                pareto_changed = True
             if include:
+                # include new bid in POF and again check for this new bid if its close to y=x
+                if our_utility == opponent_utility:
+                    new_kalai = (our_utility,opponent_utility)
+                elif our_utility < opponent_utility:
+                    closest_up = min(closest_up, (our_utility,opponent_utility), key=lambda x: np.abs(x[0]-x[1]))
+                else:
+                    closest_down = min(closest_down, (our_utility,opponent_utility), key=lambda x: np.abs(x[0]-x[1]))
+
                 max_pareto = 1.0
                 pareto_distance = 0.0
                 new_pareto.append((our_utility,opponent_utility))
-            self.pareto_frontier = new_pareto
 
-        if new_kalai is None:
+                # store the new POF
+                self.pareto_frontier = new_pareto
+
+        # from the points found close to y=x, calculate kalai
+        if new_kalai is None and pareto_changed:
             if closest_up != (0.0,1.0):
                 if closest_down != (1.0,0.0):
+                    # intersection point of y=x and line through two closest points to this line (on both sides)
                     a = (closest_up[1]-closest_down[1])/(closest_up[0]-closest_down[0])
                     b = closest_up[1]-a*closest_up[0]
-                    self.kalai_smorodinsky = (b/(1-a),b/(1-a))
+                    self.kalai_smorodinsky = (b/(1.0-a),b/(1.0-a))
                 else:
                     self.kalai_smorodinsky = ((closest_up[0]+closest_up[1])/2.0,(closest_up[0]+closest_up[1])/2.0)
             elif closest_down != (1.0,0.0):
                 self.kalai_smorodinsky = ((closest_down[0]+closest_down[1])/2.0,(closest_down[0]+closest_down[1])/2.0)
-        else:
+        elif pareto_changed:
             self.kalai_smorodinsky = new_kalai
+
+
         # # Calculate the Nash product
         # nash_products = np.array([outcome[0] * outcome[1] for outcome in pareto_frontier])
 
-        # Calculate the Kalai-Smorodinsky point
-        # up = []
-        # down = []
-        # kalai_smorodinsky = None
-        # for point in pareto_frontier:
-        #     if point[0] == point[1]:
-        #         kalai_smorodinsky = point 
-        #         break 
-        #     if point[0] > point[1]:
-        #         down.append(point)
-        #     if point[0] < point[1]:
-        #         up.append(point)
-        # if kalai_smorodinsky == None:
-        #     if len(up) > 0:
-        #         if len(down) > 0:
-        #             # intersection point of y=x and line through two closest points to this line (on both sides)
-        #             p1 = max(up, key = lambda x: x[0]+x[1])
-        #             p2 = max(down, key = lambda x: x[0]+x[1])
-        #             # using y = ax + b
-        #             a = (p1[1]-p2[1])/(p1[0]-p2[0])
-        #             b = p1[1]-a*p1[0]
-        #             kalai_smorodinsky = [b/(1-a),b/(1-a)]
-        #         else:
-        #             kalai_smorodinsky = min(up, key = lambda x: x[0]+x[1])
-        #     else:
-        #         if len(down) > 0:
-        #             kalai_smorodinsky = min(down, key = lambda x: x[0]+x[1])
-        #         else:
-        #             kalai_smorodinsky = [1,1]
         # kalai_smorodinsky = np.array(kalai_smorodinsky)
         # # Calculate the distances from the bid to these features
         # pareto_distance = np.min(np.sqrt(np.sum((pof - np.array([our_utility, opponent_utility])) ** 2, axis=1)))
@@ -394,8 +387,11 @@ class Group38Agent(DefaultParty):
         # pareto_score = (max_distance - pareto_distance) / max_distance
         # nash_score = (max_distance - nash_distance) / max_distance
         # ks_score = ks_distance / max_distance
-    
-        return score
+
+        ks_distance = np.sqrt((our_utility-self.kalai_smorodinsky[0])**2 + (opponent_utility-self.kalai_smorodinsky[1])**2)
+        ks_score = np.sqrt(self.kalai_smorodinsky[0]**2 + self.kalai_smorodinsky[1]**2) - ks_distance
+        pareto_score = max_pareto - pareto_distance 
+        return ks_score * 0.5 + pareto_score * 0.5
     #
     # PRIVATE FUNCTIONS
     #
