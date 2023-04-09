@@ -301,10 +301,21 @@ class Group38Agent(DefaultParty):
             self.pareto_frontier.append((our_utility,opponent_utility))
             max_pareto = 1.0
             pareto_distance = 0.0
+            self.kalai_smorodinsky = ((our_utility+opponent_utility)/2.0,(our_utility+opponent_utility)/2.0)
         else:
+            closest_up = (0.0,1.0) 
+            closest_down = (1.0,0.0)
             new_pareto = []
             include = True
+            new_kalai = None
             for point in self.pareto_frontier:
+                if point[0] == point[1]:
+                    new_kalai = point 
+                elif point[0] < point[1]:
+                    closest_up = min(closest_up, point, key=lambda x: np.abs(x[0]-x[1]))
+                else:
+                    closest_down = min(closest_down, point, key=lambda x: np.abs(x[0]-x[1]))
+
                 pareto_distance = min(pareto_distance,np.sqrt(np.abs(point[0]-our_utility)**2 + np.abs(point[1]-opponent_utility)**2))
                 max_pareto = max(max_pareto, np.sqrt(point[0]**2 + point[1]**2))
                 if our_utility <= point[0] and opponent_utility <= point[1]:
@@ -320,7 +331,18 @@ class Group38Agent(DefaultParty):
                 new_pareto.append((our_utility,opponent_utility))
             self.pareto_frontier = new_pareto
 
-
+        if new_kalai is None:
+            if closest_up != (0.0,1.0):
+                if closest_down != (1.0,0.0):
+                    a = (closest_up[1]-closest_down[1])/(closest_up[0]-closest_down[0])
+                    b = closest_up[1]-a*closest_up[0]
+                    self.kalai_smorodinsky = (b/(1-a),b/(1-a))
+                else:
+                    self.kalai_smorodinsky = ((closest_up[0]+closest_up[1])/2.0,(closest_up[0]+closest_up[1])/2.0)
+            elif closest_down != (1.0,0.0):
+                self.kalai_smorodinsky = ((closest_down[0]+closest_down[1])/2.0,(closest_down[0]+closest_down[1])/2.0)
+        else:
+            self.kalai_smorodinsky = new_kalai
         # # Calculate the Nash product
         # nash_products = np.array([outcome[0] * outcome[1] for outcome in pareto_frontier])
 
