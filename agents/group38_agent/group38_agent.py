@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from random import randint
 from time import time
-from typing import cast
+from typing import Tuple, cast
 
 from geniusweb.actions.Accept import Accept
 from geniusweb.actions.Action import Action
@@ -388,10 +388,29 @@ class Group38Agent(DefaultParty):
         # nash_score = (max_distance - nash_distance) / max_distance
         # ks_score = ks_distance / max_distance
 
+        # Define a function that can be used to mix scores
+        def mix_score(*scores: Tuple[float, float]) -> float:
+            # Add all weights
+            total_weight: float = 0.0
+            for (wght, _) in scores:
+                total_weight += wght
+
+            # Compute the mix
+            total_score: float = 0.0
+            for (wght, sc) in scores:
+                total_score += (wght/total_weight) * sc
+
+            return total_score
+
         ks_distance = np.sqrt((our_utility-self.kalai_smorodinsky[0])**2 + (opponent_utility-self.kalai_smorodinsky[1])**2)
         ks_score = np.sqrt(self.kalai_smorodinsky[0]**2 + self.kalai_smorodinsky[1]**2) - ks_distance
-        pareto_score = max_pareto - pareto_distance 
-        return ks_score * 0.5 + pareto_score * 0.5
+        pareto_score = max_pareto - pareto_distance
+
+        return mix_score(
+            (1, ks_score),
+            (1, pareto_score)
+        )
+        # return score
     #
     # PRIVATE FUNCTIONS
     #
