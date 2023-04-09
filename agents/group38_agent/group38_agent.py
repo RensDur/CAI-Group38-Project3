@@ -57,6 +57,8 @@ class Group38Agent(DefaultParty):
         # Concession factor: beta
         self._beta = 0.2
         self.current_bids = []
+        self.pareto_frontier = []
+        self.kalai_smorodinsky = None
 
 
     def notifyChange(self, data: Inform):
@@ -264,108 +266,114 @@ class Group38Agent(DefaultParty):
         Returns:
             float: score
         """
-        # progress = self.progress.get(time() * 1000)
-        #
-        # our_utility = float(self.profile.getUtility(bid))
-        #
-        # time_pressure = 1.0 - progress ** (1 / eps)
-        # score = alpha * time_pressure * our_utility
-        #
-        # if self.opponent_model is not None:
-        #     opponent_utility = self.opponent_model.get_predicted_utility(bid)
-        #     opponent_score = (1.0 - alpha * time_pressure) * opponent_utility
-        #     score += opponent_score
-        #
-        # return score
-
-        # Get utilities
+        progress = self.progress.get(time() * 1000)
+        
         our_utility = float(self.profile.getUtility(bid))
-
+        
+        time_pressure = 1.0 - progress ** (1 / eps)
+        score = alpha * time_pressure * our_utility
+        
         if self.opponent_model is None:
-            progress = self.progress.get(time() * 1000)
-            time_pressure = 1.0 - progress ** (1 / eps)
-            return alpha * time_pressure * our_utility
+            return score 
 
         opponent_utility = self.opponent_model.get_predicted_utility(bid)
+        opponent_score = (1.0 - alpha * time_pressure) * opponent_utility
+        score += opponent_score
+
+
+
+
+
+
+
+
+
+
+
+
 
         # Add current bid to list
         self.current_bids.append((our_utility, opponent_utility))
 
-        # Calculate pareto optimal frontier
-        pareto_frontier = []
-        for index,outcome in enumerate(self.current_bids):
-            isPareto = True
-            for index2,outcome2 in enumerate(self.current_bids):
-                if index==index2:
-                    continue
-                if outcome2[0] > outcome[0] and outcome2[1] > outcome[1]:
-                    isPareto = False
+        pareto_distance = np.sqrt(2.0)
+        max_pareto = 0.0
+        if len(self.pareto_frontier) == 0:
+            self.pareto_frontier.append((our_utility,opponent_utility))
+            max_pareto = 1.0
+            pareto_distance = 0.0
+        else:
+            new_pareto = []
+            include = True
+            for point in self.pareto_frontier:
+                pareto_distance = min(pareto_distance,np.sqrt(np.abs(point[0]-our_utility)**2 + np.abs(point[1]-opponent_utility)**2))
+                max_pareto = max(max_pareto, np.sqrt(point[0]**2 + point[1]**2))
+                if our_utility <= point[0] and opponent_utility <= point[1]:
+                    include = False
+                    new_pareto = self.pareto_frontier
                     break
-            if isPareto:
-                pareto_frontier.append(outcome)
+                if our_utility > point[0] and opponent_utility > point[1]:
+                    continue
+                new_pareto.append(point)
+            if include:
+                max_pareto = 1.0
+                pareto_distance = 0.0
+                new_pareto.append((our_utility,opponent_utility))
+            self.pareto_frontier = new_pareto
 
-        pareto_frontier = np.array(pareto_frontier)
 
-        # Calculate the Nash product
-        nash_products = np.array([outcome[0] * outcome[1] for outcome in pareto_frontier])
+        # # Calculate the Nash product
+        # nash_products = np.array([outcome[0] * outcome[1] for outcome in pareto_frontier])
 
         # Calculate the Kalai-Smorodinsky point
-        # kalai_smorodinsky = np.array([(our_utility + min(pareto_frontier[:, 0])) / 2,
-        #                               (opponent_utility + min(pareto_frontier[:, 1])) / 2])
-        up = []
-        down = []
-        kalai_smorodinsky = None
-        for point in pareto_frontier:
-            if point[0] == point[1]:
-                kalai_smorodinsky = point 
-                break 
-            if point[0] > point[1]:
-                down.append(point)
-            if point[0] < point[1]:
-                up.append(point)
-        if kalai_smorodinsky == None:
-            if len(up) > 0:
-                if len(down) > 0:
-                    # intersection point of y=x and line through two closest points to this line (on both sides)
-                    p1 = max(up, key = lambda x: x[0]+x[1])
-                    p2 = max(down, key = lambda x: x[0]+x[1])
-                    # using y = ax + b
-                    a = (p1[1]-p2[1])/(p1[0]-p2[0])
-                    b = p1[1]-a*p1[0]
-                    kalai_smorodinsky = [b/(1-a),b/(1-a)]
-                else:
-                    kalai_smorodinsky = min(up, key = lambda x: x[0]+x[1])
-            else:
-                if len(down) > 0:
-                    kalai_smorodinsky = min(down, key = lambda x: x[0]+x[1])
-                else:
-                    kalai_smorodinsky = [1,1]
-        kalai_smorodinsky = np.array(kalai_smorodinsky)
-        # Calculate the distances from the bid to these features
-        pareto_distance = np.min(np.sqrt(np.sum((pareto_frontier - np.array([our_utility, opponent_utility])) ** 2, axis=1)))
-        nash_distance = np.min(np.abs(nash_products - (our_utility * opponent_utility)))
-        ks_distance = np.sqrt(np.sum((kalai_smorodinsky - np.array([our_utility, opponent_utility])) ** 2))
+        # up = []
+        # down = []
+        # kalai_smorodinsky = None
+        # for point in pareto_frontier:
+        #     if point[0] == point[1]:
+        #         kalai_smorodinsky = point 
+        #         break 
+        #     if point[0] > point[1]:
+        #         down.append(point)
+        #     if point[0] < point[1]:
+        #         up.append(point)
+        # if kalai_smorodinsky == None:
+        #     if len(up) > 0:
+        #         if len(down) > 0:
+        #             # intersection point of y=x and line through two closest points to this line (on both sides)
+        #             p1 = max(up, key = lambda x: x[0]+x[1])
+        #             p2 = max(down, key = lambda x: x[0]+x[1])
+        #             # using y = ax + b
+        #             a = (p1[1]-p2[1])/(p1[0]-p2[0])
+        #             b = p1[1]-a*p1[0]
+        #             kalai_smorodinsky = [b/(1-a),b/(1-a)]
+        #         else:
+        #             kalai_smorodinsky = min(up, key = lambda x: x[0]+x[1])
+        #     else:
+        #         if len(down) > 0:
+        #             kalai_smorodinsky = min(down, key = lambda x: x[0]+x[1])
+        #         else:
+        #             kalai_smorodinsky = [1,1]
+        # kalai_smorodinsky = np.array(kalai_smorodinsky)
+        # # Calculate the distances from the bid to these features
+        # pareto_distance = np.min(np.sqrt(np.sum((pof - np.array([our_utility, opponent_utility])) ** 2, axis=1)))
+        # nash_distance = np.min(np.abs(nash_products - (our_utility * opponent_utility)))
+        # ks_distance = np.sqrt(np.sum((kalai_smorodinsky - np.array([our_utility, opponent_utility])) ** 2))
 
-        # Define weights dependent on how important each factor is
-        pareto_weight = 0.5
-        nash_weight = 0.3
-        ks_weight = 0.2
+        # # Define weights dependent on how important each factor is
+        # pareto_weight = 0.5
+        # nash_weight = 0.3
+        # ks_weight = 0.2
 
-        # TODO: find proper max distance
-        n = AllBidsList(self.profile.getDomain()).size()
-        max_distance = np.sqrt(np.sum(n ** 2))
+        # # TODO: find proper max distance
+        # n = AllBidsList(self.profile.getDomain()).size()
+        # max_distance = np.sqrt(np.sum(n ** 2))
 
-        # Calculate seperate scores
-        pareto_score = (max_distance - pareto_distance) / max_distance
-        nash_score = (max_distance - nash_distance) / max_distance
-        ks_score = ks_distance / max_distance
-
-        print("pareto:", pareto_score)
-        print("nash:", nash_score)
-        print("ks:", ks_score)
+        # # Calculate seperate scores
+        # pareto_score = (max_distance - pareto_distance) / max_distance
+        # nash_score = (max_distance - nash_distance) / max_distance
+        # ks_score = ks_distance / max_distance
     
-        return (pareto_score * pareto_weight) + (nash_score * nash_weight) + (ks_score * ks_weight)
-
+        return score
     #
     # PRIVATE FUNCTIONS
     #
