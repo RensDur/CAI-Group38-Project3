@@ -410,12 +410,15 @@ class Group38Agent(DefaultParty):
         ks_score = np.sqrt(self.kalai_smorodinsky[0]**2 + self.kalai_smorodinsky[1]**2) - ks_distance
         pareto_score = max_pareto - pareto_distance
 
+        # return score
+
         if progress < 0.5:
             return score
 
         return mix_score(
+            (1, score),
             (1, ks_score),
-            (1, pareto_score)
+            (0.25, pareto_score)
         )
         # return score
     #
@@ -447,7 +450,7 @@ class Group38Agent(DefaultParty):
             ),
             minUtil
         )
-        print(result)
+        # print(result)
         return result
 
 
