@@ -55,7 +55,7 @@ class Group38Agent(DefaultParty):
         self.logger.log(logging.INFO, "party is initialized")
 
         # Concession factor: beta
-        self._beta = 1.2
+        self._beta = 0.2
         self.current_bids = []
         self.pareto_frontier = []
         self.kalai_smorodinsky = None
