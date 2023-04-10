@@ -215,7 +215,8 @@ class Group38Agent(DefaultParty):
         # Accept this bid once its utility has reached at least our utility-goal.
         # This utility goal is based on the progress in the negotiation.
         conditions = [
-            self.profile.getUtility(bid) > self._getUtilityGoal(progress)
+            self.profile.getUtility(bid) > self._getUtilityGoal(progress),
+            progress >= 0.75
         ]
         return all(conditions)
 
