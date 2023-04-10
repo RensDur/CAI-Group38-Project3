@@ -55,7 +55,7 @@ class Group38Agent(DefaultParty):
         self.logger.log(logging.INFO, "party is initialized")
 
         # Concession factor: beta
-        self._beta = 1.2
+        self._beta = 0.2
         self.current_bids = []
         self.pareto_frontier = []
         self.kalai_smorodinsky = None
@@ -166,8 +166,10 @@ class Group38Agent(DefaultParty):
 
             bid = cast(Offer, action).getBid()
 
+            progress: float = self.progress.get(time() * 1000)
+
             # update opponent model with bid
-            self.opponent_model.update(bid)
+            self.opponent_model.update(bid, progress)
             # set bid as last received
             self.last_received_bid = bid
 
@@ -215,7 +217,8 @@ class Group38Agent(DefaultParty):
         # Accept this bid once its utility has reached at least our utility-goal.
         # This utility goal is based on the progress in the negotiation.
         conditions = [
-            self.profile.getUtility(bid) > self._getUtilityGoal(progress)
+            self.profile.getUtility(bid) > self._getUtilityGoal(progress),
+            progress >= 0.75
         ]
         return all(conditions)
 
@@ -266,7 +269,7 @@ class Group38Agent(DefaultParty):
         Returns:
             float: score
         """
-        progress = self.progress.get(time() * 1000)
+        progress: float = self.progress.get(time() * 1000)
         
         our_utility = float(self.profile.getUtility(bid))
         
