@@ -54,7 +54,7 @@ class Group38Agent(DefaultParty):
         self.logger.log(logging.INFO, "party is initialized")
 
         # Concession factor: beta
-        self._beta = 0.2
+        self._beta = 1.2
 
 
     def notifyChange(self, data: Inform):
