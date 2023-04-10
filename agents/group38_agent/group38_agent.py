@@ -283,8 +283,6 @@ class Group38Agent(DefaultParty):
         opponent_score = (1.0 - alpha * time_pressure) * opponent_utility
         score += opponent_score
 
-
-
         # Add current bid to list
         self.current_bids.append((our_utility, opponent_utility))
 
@@ -411,6 +409,9 @@ class Group38Agent(DefaultParty):
         ks_distance = np.sqrt((our_utility-self.kalai_smorodinsky[0])**2 + (opponent_utility-self.kalai_smorodinsky[1])**2)
         ks_score = np.sqrt(self.kalai_smorodinsky[0]**2 + self.kalai_smorodinsky[1]**2) - ks_distance
         pareto_score = max_pareto - pareto_distance
+
+        if progress < 0.5:
+            return score
 
         return mix_score(
             (1, ks_score),
