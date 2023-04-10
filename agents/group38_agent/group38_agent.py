@@ -354,9 +354,12 @@ class Group38Agent(DefaultParty):
             if closest_up != (0.0,1.0):
                 if closest_down != (1.0,0.0):
                     # intersection point of y=x and line through two closest points to this line (on both sides)
-                    a = (closest_up[1]-closest_down[1])/(closest_up[0]-closest_down[0])
-                    b = closest_up[1]-a*closest_up[0]
-                    self.kalai_smorodinsky = (b/(1.0-a),b/(1.0-a))
+                    if (closest_up[0]-closest_down[0]) == 0:
+                        self.kalai_smorodinsky = (closest_up[0],closest_up[0])
+                    else:
+                        a = (closest_up[1]-closest_down[1])/(closest_up[0]-closest_down[0])
+                        b = closest_up[1]-a*closest_up[0]
+                        self.kalai_smorodinsky = (b/(1.0-a),b/(1.0-a))
                 else:
                     self.kalai_smorodinsky = ((closest_up[0]+closest_up[1])/2.0,(closest_up[0]+closest_up[1])/2.0)
             elif closest_down != (1.0,0.0):
