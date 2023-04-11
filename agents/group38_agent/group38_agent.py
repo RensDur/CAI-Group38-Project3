@@ -55,7 +55,7 @@ class Group38Agent(DefaultParty):
         self.logger.log(logging.INFO, "party is initialized")
 
         # Concession factor: beta
-        self._beta = 0.2
+        self._beta = 0.05
         self.current_bids = []
         self.pareto_frontier = []
         self.kalai_smorodinsky = None
@@ -367,7 +367,7 @@ class Group38Agent(DefaultParty):
         return mix_score(
             (1, old_score),
             (1, ks_score),
-            (0.5, pareto_score)
+            (1, pareto_score)
         )
         # return score
     #
