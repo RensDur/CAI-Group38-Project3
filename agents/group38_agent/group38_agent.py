@@ -263,7 +263,7 @@ class Group38Agent(DefaultParty):
         # This utility goal is based on the progress in the negotiation.
         conditions = [
             self.profile.getUtility(bid) > self._getUtilityGoal(progress),
-            self.score_bid(bid) >= 0.75,
+            self.score_bid(bid) >= 0.65,
             progress >= 0.5
         ]
         return all(conditions)
