@@ -286,7 +286,6 @@ class Group38Agent(DefaultParty):
         # Add current bid to list
         self.current_bids.append((our_utility, opponent_utility))
 
-
         pareto_distance = np.sqrt(2.0)
         max_pareto = 1.0        
         if len(self.pareto_frontier) == 0:
@@ -322,30 +321,6 @@ class Group38Agent(DefaultParty):
                 # store the new POF
                 self.pareto_frontier = new_pareto
 
-
-        # # Calculate the Nash product
-        # nash_products = np.array([outcome[0] * outcome[1] for outcome in pareto_frontier])
-
-        # kalai_smorodinsky = np.array(kalai_smorodinsky)
-        # # Calculate the distances from the bid to these features
-        # pareto_distance = np.min(np.sqrt(np.sum((pof - np.array([our_utility, opponent_utility])) ** 2, axis=1)))
-        # nash_distance = np.min(np.abs(nash_products - (our_utility * opponent_utility)))
-        # ks_distance = np.sqrt(np.sum((kalai_smorodinsky - np.array([our_utility, opponent_utility])) ** 2))
-
-        # # Define weights dependent on how important each factor is
-        # pareto_weight = 0.5
-        # nash_weight = 0.3
-        # ks_weight = 0.2
-
-        # # TODO: find proper max distance
-        # n = AllBidsList(self.profile.getDomain()).size()
-        # max_distance = np.sqrt(np.sum(n ** 2))
-
-        # # Calculate seperate scores
-        # pareto_score = (max_distance - pareto_distance) / max_distance
-        # nash_score = (max_distance - nash_distance) / max_distance
-        # ks_score = ks_distance / max_distance
-
         # Define a function that can be used to mix scores
         def mix_score(*scores: Tuple[float, float]) -> float:
             # Add all weights
@@ -360,8 +335,7 @@ class Group38Agent(DefaultParty):
 
             return total_score
 
-        ks_score = 1.0-np.abs(our_utility - opponent_utility)
-        pareto_score = (max_pareto - pareto_distance)/max_pareto
+        pareto_score = (max_pareto - pareto_distance) / max_pareto
 
         # return score
 
@@ -370,10 +344,9 @@ class Group38Agent(DefaultParty):
 
         return mix_score(
             (1, old_score),
-            (0, ks_score),
             (1, pareto_score)
         )
-        # return score
+
     #
     # PRIVATE FUNCTIONS
     #
