@@ -55,7 +55,7 @@ class Group38Agent(DefaultParty):
         self.logger.log(logging.INFO, "party is initialized")
 
         # Concession factor: beta
-        self._beta = 0.05
+        self._beta = 0.2
         self.current_bids = []
         self.pareto_frontier = []
         self.kalai_smorodinsky = None
@@ -341,7 +341,6 @@ class Group38Agent(DefaultParty):
         # Add current bid to list
         # self.current_bids.append((our_utility, opponent_utility))
 
-
         pareto_distance = np.sqrt(2.0)
         max_pareto = 1.0        
         for point in self.pareto_frontier:
@@ -365,16 +364,14 @@ class Group38Agent(DefaultParty):
 
             return total_score
 
-        ks_score = 1.0-np.abs(our_utility - opponent_utility)
-        pareto_score = (max_pareto - pareto_distance)/max_pareto
+        pareto_score = (max_pareto - pareto_distance) / max_pareto
 
 
         return mix_score(
             (1, old_score),
-            (0, ks_score),
             (1, pareto_score)
         )
-        return score
+
     #
     # PRIVATE FUNCTIONS
     #
