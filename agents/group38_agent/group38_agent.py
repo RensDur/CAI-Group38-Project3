@@ -201,6 +201,48 @@ class Group38Agent(DefaultParty):
     ###########################################################################################
     ################################## Example methods below ##################################
     ###########################################################################################
+    def update_pareto_front(self, bid: Bid):    
+        progress: float = self.progress.get(time() * 1000)
+        
+        our_utility = float(self.profile.getUtility(bid))
+        
+        # time_pressure = 1.0 - progress ** (1 / eps)
+        # old_score = alpha * time_pressure * our_utility
+        
+        if self.opponent_model is None:
+            return 
+
+        opponent_utility = self.opponent_model.get_predicted_utility(bid)
+        # opponent_score = (1.0 - alpha * time_pressure) * opponent_utility
+        # old_score += opponent_score
+
+        # Add current bid to list
+        self.current_bids.append((our_utility, opponent_utility))
+
+        if len(self.pareto_frontier) == 0:
+            # first bid so add to POF
+            self.pareto_frontier.append([our_utility,opponent_utility,bid])
+        else:
+            new_pareto = []
+            include = True
+            # loop through POF and check if new bid will change the frontier
+            for point in self.pareto_frontier:
+                if our_utility <= point[0] and opponent_utility <= point[1]:
+                    include = False
+                    break
+                if our_utility > point[0] and opponent_utility > point[1]:
+                    # don't include this point in the POF anymore
+                    continue   
+
+                # include in new POF
+                new_pareto.append(point)
+
+            if include:
+                # include new bid in POF
+                new_pareto.append([our_utility,opponent_utility,bid])
+
+                # store the new POF
+                self.pareto_frontier = new_pareto
 
 
 
@@ -213,6 +255,9 @@ class Group38Agent(DefaultParty):
 
         # progress of the negotiation session between 0 and 1 (1 is deadline)
         progress = self.progress.get(time() * 1000)
+
+        # update pareto front with new bid if needed
+        self.update_pareto_front(bid)
 
         # Accept this bid once its utility has reached at least our utility-goal.
         # This utility goal is based on the progress in the negotiation.
@@ -246,12 +291,18 @@ class Group38Agent(DefaultParty):
         # take 500 attempts to find a bid according to a heuristic score
         for _ in range(500):
             bid = all_bids.get(randint(0, all_bids.size() - 1))
+            self.update_pareto_front(bid)
+
             bid_score = self.score_bid(bid, eps=0.00001)
             dist_to_utilityGoal = abs(bid_score - float(utilityGoal))
             if (bid_score < utilityGoal and bid_score > best_bid_score) \
                 or (bid_score >= utilityGoal and dist_to_utilityGoal < best_dist_to_utilityGoal):
                 best_bid_score, best_bid, best_dist_to_utilityGoal = bid_score, bid, dist_to_utilityGoal
 
+        if progress < 0.5 or len(self.pareto_frontier) == 0:
+            return best_bid
+
+        best_bid = min(self.pareto_frontier, key = lambda x: np.abs(x[0]-x[1]))[2]
         return best_bid
 
     """[Strategy]
@@ -266,7 +317,7 @@ class Group38Agent(DefaultParty):
                 altruistic behaviour. Defaults to 0.95.
             eps (float, optional): Time pressure factor, balances between conceding
                 and Boulware behaviour over time. Defaults to 0.1.
-
+        
         Returns:
             float: score
         """
@@ -284,68 +335,21 @@ class Group38Agent(DefaultParty):
         opponent_score = (1.0 - alpha * time_pressure) * opponent_utility
         old_score += opponent_score
 
+        if len(self.pareto_frontier) == 0 or progress < 0.5:
+            return old_score
+
         # Add current bid to list
-        self.current_bids.append((our_utility, opponent_utility))
+        # self.current_bids.append((our_utility, opponent_utility))
 
 
         pareto_distance = np.sqrt(2.0)
         max_pareto = 1.0        
-        if len(self.pareto_frontier) == 0:
-            # first bid so add to POF
-            self.pareto_frontier.append((our_utility,opponent_utility))
-            max_pareto = 1.0
-            pareto_distance = 0.0
-        else:
-            new_pareto = []
-            include = True
-            # loop through POF and check if new bid will change the frontier
-            for point in self.pareto_frontier:
-                if our_utility <= point[0] and opponent_utility <= point[1]:
-                    include = False
-                if our_utility > point[0] and opponent_utility > point[1]:
-                    # don't include this point in the POF anymore
-                    continue   
-                # update pareto distances
-                distance = np.sqrt(np.abs(point[0]-our_utility)**2 + np.abs(point[1]-opponent_utility)**2)
-                if distance < pareto_distance:
-                    pareto_distance = distance 
-                    max_pareto = np.sqrt(point[0]**2 + point[1]**2)
+        for point in self.pareto_frontier:
+            distance = np.sqrt(np.abs(point[0]-our_utility)**2 + np.abs(point[1]-opponent_utility)**2)
+            if distance < pareto_distance:
+                pareto_distance = distance 
+                max_pareto = np.sqrt(point[0]**2 + point[1]**2)
 
-                # include in new POF
-                new_pareto.append(point)
-
-            if include:
-                # include new bid in POF
-                max_pareto = 1.0
-                pareto_distance = 0.0
-                new_pareto.append((our_utility,opponent_utility))
-
-                # store the new POF
-                self.pareto_frontier = new_pareto
-
-
-        # # Calculate the Nash product
-        # nash_products = np.array([outcome[0] * outcome[1] for outcome in pareto_frontier])
-
-        # kalai_smorodinsky = np.array(kalai_smorodinsky)
-        # # Calculate the distances from the bid to these features
-        # pareto_distance = np.min(np.sqrt(np.sum((pof - np.array([our_utility, opponent_utility])) ** 2, axis=1)))
-        # nash_distance = np.min(np.abs(nash_products - (our_utility * opponent_utility)))
-        # ks_distance = np.sqrt(np.sum((kalai_smorodinsky - np.array([our_utility, opponent_utility])) ** 2))
-
-        # # Define weights dependent on how important each factor is
-        # pareto_weight = 0.5
-        # nash_weight = 0.3
-        # ks_weight = 0.2
-
-        # # TODO: find proper max distance
-        # n = AllBidsList(self.profile.getDomain()).size()
-        # max_distance = np.sqrt(np.sum(n ** 2))
-
-        # # Calculate seperate scores
-        # pareto_score = (max_distance - pareto_distance) / max_distance
-        # nash_score = (max_distance - nash_distance) / max_distance
-        # ks_score = ks_distance / max_distance
 
         # Define a function that can be used to mix scores
         def mix_score(*scores: Tuple[float, float]) -> float:
@@ -364,17 +368,13 @@ class Group38Agent(DefaultParty):
         ks_score = 1.0-np.abs(our_utility - opponent_utility)
         pareto_score = (max_pareto - pareto_distance)/max_pareto
 
-        # return score
-
-        if progress < 0.5:
-            return old_score
 
         return mix_score(
             (1, old_score),
             (0, ks_score),
             (1, pareto_score)
         )
-        # return score
+        return score
     #
     # PRIVATE FUNCTIONS
     #
