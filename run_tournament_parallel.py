@@ -49,9 +49,9 @@ if __name__ == '__main__':
             # {
             #     "class": "agents.CSE3210.agent3.agent3.Agent3",
             # },
-            # {
-            #     "class": "agents.CSE3210.agent7.agent7.Agent7",
-            # },
+            {
+                "class": "agents.CSE3210.agent7.agent7.Agent7",
+            },
             # {
             #     "class": "agents.CSE3210.agent11.agent11.Agent11",
             # },
@@ -67,9 +67,9 @@ if __name__ == '__main__':
             # {
             #     "class": "agents.CSE3210.agent22.agent22.Agent22",
             # },
-            # {
-            #     "class": "agents.CSE3210.agent24.agent24.Agent24",
-            # },
+            {
+                "class": "agents.CSE3210.agent24.agent24.Agent24",
+            },
             # {
             #     "class": "agents.CSE3210.agent25.agent25.Agent25",
             # },
@@ -85,9 +85,9 @@ if __name__ == '__main__':
             # {
             #     "class": "agents.CSE3210.agent32.agent32.Agent32",
             # },
-            # {
-            #     "class": "agents.CSE3210.agent33.agent33.Agent33",
-            # },
+            {
+                "class": "agents.CSE3210.agent33.agent33.Agent33",
+            },
             # {
             #     "class": "agents.CSE3210.agent41.agent41.Agent41",
             # },
@@ -100,9 +100,9 @@ if __name__ == '__main__':
             # {
             #     "class": "agents.CSE3210.agent52.agent52.Agent52",
             # },
-            # {
-            #     "class": "agents.CSE3210.agent55.agent55.Agent55",
-            # },
+            {
+                "class": "agents.CSE3210.agent55.agent55.Agent55",
+            },
             # {
             #     "class": "agents.CSE3210.agent58.agent58.Agent58",
             # },
