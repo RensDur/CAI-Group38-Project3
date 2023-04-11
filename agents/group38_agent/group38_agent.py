@@ -311,8 +311,10 @@ class Group38Agent(DefaultParty):
                     # don't include this point in the POF anymore
                     continue   
                 # update pareto distances
-                pareto_distance = min(pareto_distance,np.sqrt(np.abs(point[0]-our_utility)**2 + np.abs(point[1]-opponent_utility)**2))
-                max_pareto = max(max_pareto, np.sqrt(point[0]**2 + point[1]**2))
+                distance = np.sqrt(np.abs(point[0]-our_utility)**2 + np.abs(point[1]-opponent_utility)**2)
+                if distance < pareto_distance:
+                    pareto_distance = distance 
+                    max_pareto = np.sqrt(point[0]**2 + point[1]**2)
 
                 # include in new POF
                 new_pareto.append(point)
