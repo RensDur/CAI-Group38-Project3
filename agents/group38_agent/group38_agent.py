@@ -272,14 +272,14 @@ class Group38Agent(DefaultParty):
         our_utility = float(self.profile.getUtility(bid))
         
         time_pressure = 1.0 - progress ** (1 / eps)
-        score = alpha * time_pressure * our_utility
+        old_score = alpha * time_pressure * our_utility
         
         if self.opponent_model is None:
-            return score 
+            return old_score 
 
         opponent_utility = self.opponent_model.get_predicted_utility(bid)
         opponent_score = (1.0 - alpha * time_pressure) * opponent_utility
-        score += opponent_score
+        old_score += opponent_score
 
         # Add current bid to list
         self.current_bids.append((our_utility, opponent_utility))
@@ -362,11 +362,12 @@ class Group38Agent(DefaultParty):
         pareto_score = (max_pareto - pareto_distance)/max_pareto
 
         if progress < 0.5:
-            return score
+            return old_score
 
         return mix_score(
+            (1, old_score),
             (1, ks_score),
-            (1, pareto_score)
+            (0.5, pareto_score)
         )
         # return score
     #
@@ -398,7 +399,7 @@ class Group38Agent(DefaultParty):
             ),
             minUtil
         )
-        print(result)
+        
         return result
 
 
