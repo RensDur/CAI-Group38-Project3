@@ -65,7 +65,7 @@ class IssueEstimatorWindow:
         self.num_values = value_set.size()
         self.value_trackers = defaultdict(ValueEstimator)
 
-        self._k = 10
+        self._k = 30
         
     def update(self, value: Value) -> bool:
         self.bids_received += 1
