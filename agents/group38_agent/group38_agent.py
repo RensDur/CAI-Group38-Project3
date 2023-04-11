@@ -366,7 +366,7 @@ class Group38Agent(DefaultParty):
 
         return mix_score(
             (1, old_score),
-            (1, ks_score),
+            (0, ks_score),
             (1, pareto_score)
         )
         # return score
