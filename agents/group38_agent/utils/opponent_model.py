@@ -105,7 +105,7 @@ class IssueEstimator:
         self.value_set = value_set
         self.windows: List[IssueEstimatorWindow] = []
 
-        self.update_params = {"alpha":0.3, "beta":0.1}
+        self.update_params = {"alpha":0.5, "beta":0.05}
 
     def update(self, value: Value, progress: float):
         self.bids_received += 1
