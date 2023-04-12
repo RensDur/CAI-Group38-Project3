@@ -56,6 +56,7 @@ class Group38Agent(DefaultParty):
 
         # Concession factor: beta
         self._beta = 0.2
+        self._scoring_strategy_switch_progress = 0.3
         self.current_bids = []
         self.pareto_frontier = []
         self.kalai_smorodinsky = None
@@ -264,7 +265,7 @@ class Group38Agent(DefaultParty):
         conditions = [
             self.profile.getUtility(bid) > self._getUtilityGoal(progress),
             self.score_bid(bid) >= 0.65,
-            progress >= 0.5
+            progress >= self._scoring_strategy_switch_progress
         ]
         return all(conditions)
 
@@ -299,7 +300,7 @@ class Group38Agent(DefaultParty):
                 or (bid_score >= utilityGoal and dist_to_utilityGoal < best_dist_to_utilityGoal):
                 best_bid_score, best_bid, best_dist_to_utilityGoal = bid_score, bid, dist_to_utilityGoal
 
-        if progress < 0.5 or len(self.pareto_frontier) == 0:
+        if progress < self._scoring_strategy_switch_progress or len(self.pareto_frontier) == 0:
             return best_bid
 
         best_bid = min(self.pareto_frontier, key = lambda x: np.abs(x[0]-x[1]))[2]
@@ -335,7 +336,7 @@ class Group38Agent(DefaultParty):
         opponent_score = (1.0 - alpha * time_pressure) * opponent_utility
         old_score += opponent_score
 
-        if len(self.pareto_frontier) == 0 or progress < 0.5:
+        if len(self.pareto_frontier) == 0 or progress < self._scoring_strategy_switch_progress:
             return old_score
 
         # Add current bid to list
