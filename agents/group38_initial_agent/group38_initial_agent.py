@@ -28,10 +28,10 @@ from geniusweb.progress.ProgressTime import ProgressTime
 from geniusweb.references.Parameters import Parameters
 from tudelft_utilities_logging.ReportToLogger import ReportToLogger
 
-from .utils.opponent_model import OpponentModel
+from .utils.initial_opponent_model import InitialOpponentModel
 
 
-class Group38Agent(DefaultParty):
+class Group38InitialAgent(DefaultParty):
     """
     Template of a Python geniusweb agent.
     """
@@ -50,7 +50,7 @@ class Group38Agent(DefaultParty):
         self.storage_dir: str = None
 
         self.last_received_bid: Bid = None
-        self.opponent_model: OpponentModel = None
+        self.opponent_model: InitialOpponentModel = None
         self.logger.log(logging.INFO, "party is initialized")
 
         # Concession factor: beta
@@ -158,7 +158,7 @@ class Group38Agent(DefaultParty):
         if isinstance(action, Offer):
             # create opponent model if it was not yet initialised
             if self.opponent_model is None:
-                self.opponent_model = OpponentModel(self.domain)
+                self.opponent_model = InitialOpponentModel(self.domain)
 
             bid = cast(Offer, action).getBid()
 

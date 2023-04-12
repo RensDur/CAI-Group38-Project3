@@ -6,7 +6,7 @@ from geniusweb.issuevalue.Domain import Domain
 from geniusweb.issuevalue.Value import Value
 
 
-class OpponentModel:
+class InitialOpponentModel:
     def __init__(self, domain: Domain):
         self.offers = []
         self.domain = domain
